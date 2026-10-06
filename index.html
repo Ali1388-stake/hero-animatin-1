@@ -1,92 +1,157 @@
 <!DOCTYPE html>
 <html lang="fa">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Hero Animation</title>
+<title>Building Animation</title>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #000;
-    }
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    background: #000;
+}
 
-    body {
-      overflow-x: hidden;
-    }
+body {
+    overflow-x: hidden;
+}
 
-    #hero {
-      position: sticky;
-      top: 0;
-      width: 100%;
-      height: 100vh;
-      overflow: hidden;
-    }
+#scrollArea {
+    height: 1000vh;
+}
 
-    #hero img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-    }
+#screen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100vh;
+    background: #000;
+}
 
-    #scroll-space {
-      height: 500vh;
-    }
-  </style>
+#heroImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+</style>
 </head>
 
 <body>
 
-  <div id="hero">
+<div id="scrollArea"></div>
+
+<div id="screen">
     <img id="heroImage" src="frame_001.jpg" alt="">
-  </div>
+</div>
 
-  <div id="scroll-space"></div>
+<script>
 
-  <script>
-    const totalFrames = 108;
-    const image = document.getElementById("heroImage");
+const TOTAL_FRAMES = 108;
 
-    let currentFrame = 1;
+const imageElement =
+    document.getElementById("heroImage");
 
-    function updateFrame() {
+const frames = [];
 
-      const maxScroll =
+let currentFrame = 1;
+
+
+/* =========================
+   ساخت و preload فریم‌ها
+========================= */
+
+for (let i = 1; i <= TOTAL_FRAMES; i++) {
+
+    const img = new Image();
+
+    img.src =
+        "frame_" +
+        String(i).padStart(3, "0") +
+        ".jpg";
+
+    frames.push(img);
+}
+
+
+/* =========================
+   تغییر فریم
+========================= */
+
+function showFrame(number) {
+
+    number = Math.max(
+        1,
+        Math.min(TOTAL_FRAMES, number)
+    );
+
+    if (number === currentFrame) {
+        return;
+    }
+
+    currentFrame = number;
+
+    /*
+      اگر تصویر قبلاً دانلود شده باشد،
+      فوراً نمایش داده می‌شود.
+    */
+
+    if (frames[number - 1].complete) {
+
+        imageElement.src =
+            frames[number - 1].src;
+
+    }
+
+}
+
+
+/* =========================
+   محاسبه فریم از اسکرول
+========================= */
+
+function update() {
+
+    const maxScroll =
         document.documentElement.scrollHeight -
         window.innerHeight;
 
-      const scrollTop = window.scrollY;
-
-      let progress = scrollTop / maxScroll;
-
-      progress = Math.max(0, Math.min(1, progress));
-
-      const frame =
-        Math.floor(progress * (totalFrames - 1)) + 1;
-
-      if (frame !== currentFrame) {
-
-        currentFrame = frame;
-
-        const frameNumber =
-          String(frame).padStart(3, "0");
-
-        image.src =
-          "frame_" + frameNumber + ".jpg";
-      }
+    if (maxScroll <= 0) {
+        return;
     }
 
-    window.addEventListener(
-      "scroll",
-      updateFrame,
-      { passive: true }
-    );
+    const progress =
+        window.scrollY / maxScroll;
 
-    updateFrame();
-  </script>
+    const frame =
+        Math.round(
+            progress * (TOTAL_FRAMES - 1)
+        ) + 1;
+
+    showFrame(frame);
+}
+
+
+/* =========================
+   اسکرول
+========================= */
+
+window.addEventListener(
+    "scroll",
+    update,
+    { passive: true }
+);
+
+
+/* =========================
+   شروع
+========================= */
+
+update();
+
+</script>
 
 </body>
 </html>
