@@ -4,18 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Hero Scroll Animation</title>
+  <title>Hero Animation</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
+    html, body {
       margin: 0;
       padding: 0;
-      width: 100%;
       background: #000;
     }
 
@@ -23,67 +17,76 @@
       overflow-x: hidden;
     }
 
-    /* فضای اسکرول */
-    #hero-wrap {
-      position: relative;
-      width: 100%;
-      height: 500vh;
-    }
-
-    /* تصویر هنگام اسکرول ثابت می‌ماند */
-    #hero-sticky {
+    #hero {
       position: sticky;
       top: 0;
       width: 100%;
       height: 100vh;
       overflow: hidden;
-      background: #000;
     }
 
-    #hero-image {
-      display: block;
+    #hero img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center;
-      user-select: none;
-      -webkit-user-drag: none;
+      display: block;
+    }
+
+    #scroll-space {
+      height: 500vh;
     }
   </style>
 </head>
 
 <body>
 
-  <section id="hero-wrap">
-    <div id="hero-sticky">
-      <img
-        id="hero-image"
-        src="frame_001.jpg"
-        alt="Hero Animation"
-      >
-    </div>
-  </section>
+  <div id="hero">
+    <img id="heroImage" src="frame_001.jpg" alt="">
+  </div>
 
+  <div id="scroll-space"></div>
 
   <script>
-    (function () {
+    const totalFrames = 108;
+    const image = document.getElementById("heroImage");
 
-      "use strict";
+    let currentFrame = 1;
 
-      /* =========================
-         تنظیمات
-      ========================= */
+    function updateFrame() {
 
-      const TOTAL_FRAMES = 108;
+      const maxScroll =
+        document.documentElement.scrollHeight -
+        window.innerHeight;
 
-      const FIRST_FRAME = 1;
+      const scrollTop = window.scrollY;
 
-      const FRAME_PREFIX = "frame_";
+      let progress = scrollTop / maxScroll;
 
-      const FRAME_EXTENSION = ".jpg";
+      progress = Math.max(0, Math.min(1, progress));
 
-      const PAD_LENGTH = 3;
+      const frame =
+        Math.floor(progress * (totalFrames - 1)) + 1;
 
-      /*
-        سرعت دنبال کردن اسکرول
-        عدد
+      if (frame !== currentFrame) {
+
+        currentFrame = frame;
+
+        const frameNumber =
+          String(frame).padStart(3, "0");
+
+        image.src =
+          "frame_" + frameNumber + ".jpg";
+      }
+    }
+
+    window.addEventListener(
+      "scroll",
+      updateFrame,
+      { passive: true }
+    );
+
+    updateFrame();
+  </script>
+
+</body>
+</html>
