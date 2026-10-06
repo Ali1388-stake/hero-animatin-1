@@ -6,26 +6,203 @@
   <title>Hero Animation</title>
 
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: #fff;
+    * {
+      box-sizing: border-box;
     }
 
-    #hero-animation {
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+    }
+
+    body {
+      overflow-x: hidden;
+    }
+
+    #nbhero-wrap {
+      position: relative;
+      width: 100%;
+      height: 500vh;
+      background: #ffffff;
+    }
+
+    #nbhero-sticky {
+      position: sticky;
+      top: 0;
+      left: 0;
       width: 100%;
       height: 100vh;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    #nbhero-canvas {
       display: block;
-      object-fit: cover;
+      width: 100%;
+      height: 100%;
     }
   </style>
 </head>
 
 <body>
 
-  <img id="hero-animation" src="frame_001.jpg" alt="Hero Animation">
+  <div id="nbhero-wrap">
+    <div id="nbhero-sticky">
+      <canvas id="nbhero-canvas"></canvas>
+    </div>
+  </div>
 
-  <script src="hero-animation.js"></script>
+  <script>
+    /* GitHub Pages frame path */
+    window.HERO_BASE_PATH =
+      "https://ali1388-stake.github.io/hero-animatin-1/";
+  </script>
 
-</body>
-</html>
+  <script>
+    /*
+     * Hero scroll-frame animation
+     * GitHub Pages version
+     */
+
+    (function () {
+      "use strict";
+
+      var CONFIG = {
+        basePath: window.HERO_BASE_PATH,
+        fileNamePattern: "frame_{n}.jpg",
+        padLength: 3,
+        firstFrame: 1,
+        lastFrame: 108,
+        backgroundColor: "#ffffff",
+        smoothing: 0.09
+      };
+
+      function pad(num, len) {
+        return String(num).padStart(len, "0");
+      }
+
+      function frameUrl(index) {
+        return CONFIG.basePath +
+          CONFIG.fileNamePattern.replace(
+            "{n}",
+            pad(index, CONFIG.padLength)
+          );
+      }
+
+      var totalFrames =
+        CONFIG.lastFrame - CONFIG.firstFrame + 1;
+
+      function init() {
+
+        var wrapper =
+          document.getElementById("nbhero-wrap");
+
+        var container =
+          document.getElementById("nbhero-sticky");
+
+        var canvas =
+          document.getElementById("nbhero-canvas");
+
+        if (!wrapper || !container || !canvas) return;
+
+        var ctx = canvas.getContext("2d");
+
+        var images = new Array(totalFrames);
+        var broken = new Array(totalFrames);
+
+        var targetProgress = 0;
+        var displayProgress = 0;
+
+        function resizeCanvas() {
+
+          var ratio =
+            window.devicePixelRatio || 1;
+
+          canvas.width =
+            container.clientWidth * ratio;
+
+          canvas.height =
+            container.clientHeight * ratio;
+
+          canvas.style.width =
+            container.clientWidth + "px";
+
+          canvas.style.height =
+            container.clientHeight + "px";
+        }
+
+        function drawCover(img, alpha) {
+
+          var canvasRatio =
+            canvas.width / canvas.height;
+
+          var imgRatio =
+            img.naturalWidth / img.naturalHeight;
+
+          var drawW;
+          var drawH;
+          var offsetX;
+          var offsetY;
+
+          if (imgRatio > canvasRatio) {
+
+            drawH = canvas.height;
+            drawW = drawH * imgRatio;
+
+            offsetX =
+              (canvas.width - drawW) / 2;
+
+            offsetY = 0;
+
+          } else {
+
+            drawW = canvas.width;
+            drawH = drawW / imgRatio;
+
+            offsetX = 0;
+
+            offsetY =
+              (canvas.height - drawH) / 2;
+          }
+
+          ctx.globalAlpha = alpha;
+
+          ctx.drawImage(
+            img,
+            offsetX,
+            offsetY,
+            drawW,
+            drawH
+          );
+
+          ctx.globalAlpha = 1;
+        }
+
+        function nearestUsable(idx) {
+
+          for (
+            var d = 0;
+            d < totalFrames;
+            d++
+          ) {
+
+            var a = idx - d;
+            var b = idx + d;
+
+            if (
+              a >= 0 &&
+              images[a] &&
+              images[a].complete &&
+              !broken[a]
+            ) {
+              return a;
+            }
+
+            if (
+              b < totalFrames &&
+              images[b] &&
+              images[b].complete &&
+              !broken[b]
+            ) {
