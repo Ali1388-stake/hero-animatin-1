@@ -4,10 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Building Animation</title>
+<title>Building Scroll Animation</title>
 
 <style>
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -18,19 +19,22 @@ body {
     overflow-x: hidden;
 }
 
-#scrollArea {
-    height: 1000vh;
+/* مسیر اسکرول */
+#scroll-area {
+    height: 800vh;
 }
 
-#screen {
+/* تصویر ثابت */
+#viewer {
     position: fixed;
     inset: 0;
     width: 100%;
     height: 100vh;
     background: #000;
+    overflow: hidden;
 }
 
-#heroImage {
+#hero-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -41,117 +45,59 @@ body {
 
 <body>
 
-<div id="scrollArea"></div>
+<div id="scroll-area"></div>
 
-<div id="screen">
-    <img id="heroImage" src="frame_001.jpg" alt="">
+<div id="viewer">
+    <img
+        id="hero-image"
+        src="frame_001.jpg"
+        alt=""
+    >
 </div>
+
 
 <script>
 
+"use strict";
+
+
+/* =====================================================
+   تنظیمات
+===================================================== */
+
 const TOTAL_FRAMES = 108;
 
+/*
+  تعداد فریم‌هایی که جلوتر از فریم فعلی
+  با اولویت بالا دانلود می‌شوند.
+*/
+const PRIORITY_AHEAD = 10;
+
+/*
+  تعداد فریم‌هایی که عقب‌تر preload می‌شوند.
+*/
+const PRIORITY_BEHIND = 5;
+
+
+/* =====================================================
+   عناصر
+===================================================== */
+
 const imageElement =
-    document.getElementById("heroImage");
-
-const frames = [];
-
-let currentFrame = 1;
+    document.getElementById("hero-image");
 
 
-/* =========================
-   ساخت و preload فریم‌ها
-========================= */
+/* =====================================================
+   حافظه فریم‌ها
+===================================================== */
 
-for (let i = 1; i <= TOTAL_FRAMES; i++) {
+const frames = new Array(TOTAL_FRAMES);
 
-    const img = new Image();
+const loaded = new Array(TOTAL_FRAMES).fill(false);
 
-    img.src =
-        "frame_" +
-        String(i).padStart(3, "0") +
-        ".jpg";
-
-    frames.push(img);
-}
+const loading = new Array(TOTAL_FRAMES).fill(false);
 
 
-/* =========================
-   تغییر فریم
-========================= */
-
-function showFrame(number) {
-
-    number = Math.max(
-        1,
-        Math.min(TOTAL_FRAMES, number)
-    );
-
-    if (number === currentFrame) {
-        return;
-    }
-
-    currentFrame = number;
-
-    /*
-      اگر تصویر قبلاً دانلود شده باشد،
-      فوراً نمایش داده می‌شود.
-    */
-
-    if (frames[number - 1].complete) {
-
-        imageElement.src =
-            frames[number - 1].src;
-
-    }
-
-}
-
-
-/* =========================
-   محاسبه فریم از اسکرول
-========================= */
-
-function update() {
-
-    const maxScroll =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
-
-    if (maxScroll <= 0) {
-        return;
-    }
-
-    const progress =
-        window.scrollY / maxScroll;
-
-    const frame =
-        Math.round(
-            progress * (TOTAL_FRAMES - 1)
-        ) + 1;
-
-    showFrame(frame);
-}
-
-
-/* =========================
-   اسکرول
-========================= */
-
-window.addEventListener(
-    "scroll",
-    update,
-    { passive: true }
-);
-
-
-/* =========================
-   شروع
-========================= */
-
-update();
-
-</script>
-
-</body>
-</html>
+/* =====================================================
+   فریم فعلی
+===================================================== */
