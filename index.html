@@ -7,7 +7,8 @@
 <title>Building Scroll Animation</title>
 
 <style>
-html, body {
+html,
+body {
     margin: 0;
     padding: 0;
     width: 100%;
@@ -18,20 +19,19 @@ body {
     overflow-x: hidden;
 }
 
-/* فضای واقعی برای اسکرول */
+/* مسیر اسکرول */
 #scroll-area {
-    width: 100%;
-    height: 1000vh;
+    height: 800vh;
 }
 
-/* تصویر همیشه روی صفحه */
+/* تصویر ثابت */
 #viewer {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100vh;
     background: #000;
+    overflow: hidden;
 }
 
 #hero-image {
@@ -48,149 +48,215 @@ body {
 <div id="scroll-area"></div>
 
 <div id="viewer">
-    <img id="hero-image" src="frame_001.jpg" alt="">
+    <img
+        id="hero-image"
+        src="frame_001.jpg"
+        alt=""
+    >
 </div>
+
 
 <script>
 
+"use strict";
+
+
+/* =====================================================
+   تنظیمات
+===================================================== */
+
 const TOTAL_FRAMES = 108;
 
-const heroImage =
+/*
+  تعداد فریم‌هایی که جلوتر از فریم فعلی
+  با اولویت بالا دانلود می‌شوند.
+*/
+const PRIORITY_AHEAD = 10;
+
+/*
+  تعداد فریم‌هایی که عقب‌تر preload می‌شوند.
+*/
+const PRIORITY_BEHIND = 5;
+
+
+/* =====================================================
+   عناصر
+===================================================== */
+
+const imageElement =
     document.getElementById("hero-image");
 
-const loadedFrames = {};
-const loadingFrames = {};
 
-let currentFrame = 1;
+/* =====================================================
+   حافظه فریم‌ها
+===================================================== */
+
+const frames = new Array(TOTAL_FRAMES);
+
+const loaded = new Array(TOTAL_FRAMES).fill(false);
+
+const loading = new Array(TOTAL_FRAMES).fill(false);
 
 
-/* ساخت نام فایل */
-function getFrameName(frame) {
-    return "frame_" +
-        String(frame).padStart(3, "0") +
-        ".jpg";
+/* =====================================================
+   فریم فعلی
+===================================================== */
+
+let currentFrame = 0;
+
+let targetFrame = 0;
+
+
+/* =====================================================
+   ساخت نام فایل
+===================================================== */
+
+function frameURL(index) {
+
+    const number =
+        String(index + 1).padStart(3, "0");
+
+    return "frame_" + number + ".jpg";
+
 }
 
 
-/* لود یک فریم */
-function loadFrame(frame) {
+/* =====================================================
+   دانلود یک فریم
+===================================================== */
 
-    if (frame < 1 || frame > TOTAL_FRAMES) {
+function loadFrame(index) {
+
+    if (
+        index < 0 ||
+        index >= TOTAL_FRAMES
+    ) {
         return;
     }
 
-    if (loadedFrames[frame] || loadingFrames[frame]) {
+    if (loaded[index] || loading[index]) {
         return;
     }
 
-    loadingFrames[frame] = true;
+
+    loading[index] = true;
+
 
     const img = new Image();
 
-    img.onload = function() {
 
-        loadedFrames[frame] = img;
-        loadingFrames[frame] = false;
+    img.onload = function () {
 
-        /* اگر همین فریم لازم است، نمایش بده */
-        if (frame === currentFrame) {
-            heroImage.src = img.src;
+        frames[index] = img;
+
+        loaded[index] = true;
+
+        loading[index] = false;
+
+
+        /*
+          اگر این همان فریمی است که کاربر
+          الان می‌خواهد، فوراً نمایش بده.
+        */
+
+        if (index === targetFrame) {
+
+            showLoadedFrame(index);
+
         }
+
     };
 
-    img.onerror = function() {
-        loadingFrames[frame] = false;
+
+    img.onerror = function () {
+
+        loading[index] = false;
+
     };
 
-    img.src = getFrameName(frame);
+
+    img.src = frameURL(index);
+
 }
 
 
-/* نمایش فریم */
-function showFrame(frame) {
+/* =====================================================
+   نمایش فریم آماده
+===================================================== */
 
-    if (frame === currentFrame &&
-        loadedFrames[frame]) {
+function showLoadedFrame(index) {
+
+    if (!loaded[index]) {
         return;
     }
 
-    currentFrame = frame;
+    imageElement.src =
+        frames[index].src;
 
-    /*
-      اگر قبلاً دانلود شده، فوراً نمایش بده
-    */
-    if (loadedFrames[frame]) {
+    currentFrame = index;
 
-        heroImage.src =
-            loadedFrames[frame].src;
-
-        return;
-    }
-
-    /*
-      اگر هنوز دانلود نشده، درخواستش کن
-    */
-    loadFrame(frame);
 }
 
 
-/* محاسبه فریم بر اساس اسکرول */
-function updateAnimation() {
+/* =====================================================
+   پیدا کردن نزدیک‌ترین فریم آماده
+===================================================== */
 
-    const maxScroll =
-        document.documentElement.scrollHeight -
-        window.innerHeight;
+function showNearestLoaded(index) {
 
-    if (maxScroll <= 0) {
+    if (loaded[index]) {
+
+        showLoadedFrame(index);
+
         return;
-    }
 
-    const progress =
-        window.scrollY / maxScroll;
-
-    const frame =
-        Math.floor(
-            progress * (TOTAL_FRAMES - 1)
-        ) + 1;
-
-    showFrame(frame);
-
-
-    /*
-      چند فریم جلوتر را هم آماده کن
-    */
-
-    for (let i = 1; i <= 8; i++) {
-        loadFrame(frame + i);
     }
 
 
     /*
-      چند فریم عقب‌تر را هم آماده کن
+      اول به جلو نگاه می‌کنیم
     */
 
-    for (let i = 1; i <= 3; i++) {
-        loadFrame(frame - i);
+    for (
+        let distance = 1;
+        distance <= TOTAL_FRAMES;
+        distance++
+    ) {
+
+        const forward =
+            index + distance;
+
+        if (
+            forward < TOTAL_FRAMES &&
+            loaded[forward]
+        ) {
+
+            showLoadedFrame(forward);
+
+            return;
+
+        }
+
+
+        const backward =
+            index - distance;
+
+        if (
+            backward >= 0 &&
+            loaded[backward]
+        ) {
+
+            showLoadedFrame(backward);
+
+            return;
+
+        }
+
     }
+
 }
 
 
-/* رویداد اسکرول */
-window.addEventListener(
-    "scroll",
-    updateAnimation,
-    { passive: true }
-);
-
-
-/* شروع با فریم اول */
-loadFrame(1);
-
-
-/* شروع انیمیشن */
-updateAnimation();
-
-</script>
-
-</body>
-</html>
+/* =====================================================
+   preload هوشمند
+=
